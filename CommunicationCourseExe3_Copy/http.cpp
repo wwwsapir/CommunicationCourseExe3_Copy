@@ -1,7 +1,8 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "http.h"
 #include <iostream>
-#include <string>
+#include <string.h>
+#include "fileServer.h"
 using namespace std;
 
 int parseMethod(char * line, HttpRequest* reqPtr)
@@ -20,6 +21,11 @@ int parseMethod(char * line, HttpRequest* reqPtr)
 		return INVALID_HTTP_MSG;
 	};
 	part = strtok(NULL, " "); //url
+	// Remove prededing "/" of url:
+	if (strlen(part) > 0 && part[0] == '/')
+	{
+		part = part + 1;
+	}
 	strcpy(reqPtr->url, part);
 	//cout << part << "\n";
 	part = strtok(NULL, "\r"); //version
@@ -98,9 +104,23 @@ int httpResponseToString(HttpResponse response, char buffer[])
 HttpResponse handleGetRequest(HttpRequest req)
 {
 	HttpResponse res;
-	res.isEmpty
-	cout << "handleGetRequest Not Implemented!"; //malloc
-	return HttpResponse();
+	int contentLen;
+	int stat = getFileObject(req.url, &res.content, &contentLen);
+	strcpy(res.connectionHeader, "keep-alive");
+	if (stat == SUCCESS)
+	{
+		res.contentLengthHeader = contentLen;
+		strcpy(res.contentTypeHeader, "text/html");
+		getLastModifiedDate(req.url, res.lastModifiedHeader);
+		strcpy(res.statusPhrase, "OK");
+		res.responseCode = 200;
+	}
+	else
+	{
+		strcpy(res.statusPhrase, "Not Found");
+		res.responseCode = 404;
+	}
+	return res;
 }
 
 HttpResponse handlePostRequest(HttpRequest req)
