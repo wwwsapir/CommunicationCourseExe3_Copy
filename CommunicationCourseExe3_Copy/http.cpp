@@ -57,6 +57,7 @@ int parseHttpRequest(char *msg, int len, HttpRequest *reqPtr)
 
 	char* line = strtok_s(msg, "\n", &rest);
 	int lineID = 0;
+
 	while (line != NULL && lineID >= 0) {
 		cout << line << "\n";
 		if (lineID == 0) //method url version
@@ -81,8 +82,6 @@ int parseHttpRequest(char *msg, int len, HttpRequest *reqPtr)
 				parseHeader(line, reqPtr, key, value);
 			}
 		}
-
-
 		line = strtok_s(NULL, "\n", &rest);
 		lineID++;
 	}
@@ -98,6 +97,8 @@ int httpResponseToString(HttpResponse response, char buffer[])
 
 HttpResponse handleGetRequest(HttpRequest req)
 {
+	HttpResponse res;
+	res.isEmpty
 	cout << "handleGetRequest Not Implemented!"; //malloc
 	return HttpResponse();
 }

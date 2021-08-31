@@ -21,10 +21,21 @@
     <ClCompile Include="http.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="fileServer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="http.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="fileServer.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="server_files\index.html">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -111,11 +111,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="fileServer.cpp" />
     <ClCompile Include="http.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="fileServer.h" />
     <ClInclude Include="http.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="server_files\index.html" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
