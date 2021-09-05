@@ -17,7 +17,7 @@ void addFilesFolderToPath(char* url, char* buffer)
 	{
 		if (url[i] == '\\')
 		{
-			url[i] == '/';
+			url[i] = '/';
 		}
 	}
 	sprintf_s(buffer, PATH_BUFFER_SIZE, "server_files%s", url);
