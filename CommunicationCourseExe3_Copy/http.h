@@ -50,3 +50,5 @@ HttpResponse handleTraceRequest(HttpRequest req);
 HttpResponse handleOptionsRequest(HttpRequest req);
 HttpResponse handleHeadRequest(HttpRequest req);
 HttpResponse handleDeleteRequest(HttpRequest req);
+int getQueryParameter(char* query, char* parametr, char value[]);
+void operateQuery(char* url);

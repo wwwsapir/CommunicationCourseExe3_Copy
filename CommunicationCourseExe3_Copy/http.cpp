@@ -22,10 +22,10 @@ int parseMethod(char * line, HttpRequest* reqPtr)
 	};
 	part = strtok(NULL, " "); //url
 	// Remove prededing "/" of url:
-	if (strlen(part) > 0 && part[0] == '/')
-	{
-		part = part + 1;
-	}
+	//if (strlen(part) > 0 && part[0] == '/') //todo fix "/" removal
+	//{
+	//	part = part + 1;
+	//}
 	strcpy(reqPtr->url, part);
 	//cout << part << "\n";
 	part = strtok(NULL, "\r"); //version
@@ -97,16 +97,20 @@ int parseHttpRequest(char *msg, int len, HttpRequest *reqPtr)
 
 int httpResponseToString(HttpResponse response, char buffer[])
 {
-	cout << "httpResponseToString Not Implemented!";
-	return 0;
+	int r1 = sprintf(buffer, "%s %d %s\n%s", response.httpVersion, response.responseCode,response.statusPhrase,response.content);
+	cout << buffer;
+	return r1;
 }
 
 HttpResponse handleGetRequest(HttpRequest req)
 {
 	HttpResponse res;
 	int contentLen;
-	int stat = getFileObject(req.url, &res.content, &contentLen);
-	strcpy(res.connectionHeader, "keep-alive");
+
+	operateQuery(req.url); //takes care language parameters and default documet name
+
+	int stat = getFileObject(req.url, &res.content, &contentLen); //f1
+	strcpy(res.connectionHeader, "keep-alive"); //todo :change responce keep-alive to requested
 	if (stat == SUCCESS)
 	{
 		res.contentLengthHeader = contentLen;
@@ -121,6 +125,55 @@ HttpResponse handleGetRequest(HttpRequest req)
 		res.responseCode = 404;
 	}
 	return res;
+}
+
+void operateQuery(char* url)
+{
+	//handle query params
+	char langParamValue[3] = EMPTY_STRING;
+	char newURL[1024];
+	if (getQueryParameter(url, "lang", langParamValue) > 0)
+	{
+		sprintf(newURL, "/%s%s", langParamValue, url);
+	}
+	else
+	{
+		sprintf(newURL, "/%s%s", "en", url);
+	}
+	strcpy(url, newURL);
+
+	//clear query parameters after handling
+	for (int i = 0; url[i]; i++)
+	{
+		if (url[i] == '?')
+			url[i] = '\0';
+	}
+
+	//handle default documents
+	if (url[strlen(url) - 1] == '/')
+	{
+		sprintf(newURL, "%s%s", url, "index.html");
+		strcpy(url, newURL);
+	}
+}
+
+
+int getQueryParameter(char* query, char* parametr, char value[])
+{
+	char* addr = strstr(query, parametr);
+	if (addr == NULL) //parameter not found
+	{
+		return 0;
+	}
+	//extract parameter
+	addr = addr + strlen(parametr) + 1; //skip 'parameter=' 
+	int valueLength = 0;
+	while (addr[valueLength] && addr[valueLength] != '\0' && addr[valueLength] != '&')
+	{
+		valueLength++;
+	}
+	strncpy(value, addr, valueLength);
+	return valueLength;
 }
 
 HttpResponse handlePostRequest(HttpRequest req)
@@ -155,6 +208,22 @@ HttpResponse handleHeadRequest(HttpRequest req)
 
 HttpResponse handleDeleteRequest(HttpRequest req)
 {
-	cout << "handleDeleteRequest Not Implemented!";
-	return HttpResponse();
+	HttpResponse res;
+
+	operateQuery(req.url); //takes care language parameters and default documet name
+	
+	int stat = deleteFileObject(req.url);
+	if (stat == SUCCESS)
+	{
+		strcpy(res.statusPhrase, "OK");
+		res.responseCode = 204;
+	}
+	else
+	{
+		strcpy(res.statusPhrase, "Not Found");
+		res.responseCode = 404;
+	}
+	strcpy(res.contentTypeHeader, "text/html");
+	res.contentLengthHeader = 0;
+	return res;
 }
