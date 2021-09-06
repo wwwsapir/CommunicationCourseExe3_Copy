@@ -115,7 +115,7 @@ int httpResponseToString(HttpResponse response, char buffer[])
 		length += sprintf(buffer + length, "Last-Modified: %s\n", response.lastModifiedHeader);
 	}
 	length += sprintf(buffer + length, "Content-Length: %d\n\n", response.contentLengthHeader);
-	if (response.contentLengthHeader > 0)
+	if (response.content != NULL)
 	{
 		length += sprintf(buffer + length, response.content);
 		free(response.content);
@@ -125,27 +125,29 @@ int httpResponseToString(HttpResponse response, char buffer[])
 	return length;
 }
 
-HttpResponse handleGetRequest(HttpRequest req)
+void fillResponseHeaders(HttpResponse* resPtr, int opStat, char* url)
 {
-	HttpResponse res;
-	int contentLen;
-
-	operateQuery(req.url); //takes care language parameters and default documet name
-
-	int stat = getFileObject(req.url, &res.content, &contentLen); //f1
-	strcpy(res.connectionHeader, "keep-alive"); //todo :change responce keep-alive to requested
-	if (stat == SUCCESS)
+	strcpy(resPtr->connectionHeader, "keep-alive");
+	if (opStat == SUCCESS)
 	{
-		res.contentLengthHeader = contentLen;
-		getLastModifiedDate(req.url, res.lastModifiedHeader);
-		strcpy(res.statusPhrase, "OK");
-		res.responseCode = 200;
+		getLastModifiedDate(url, resPtr->lastModifiedHeader);
+		strcpy(resPtr->statusPhrase, "OK");
+		resPtr->responseCode = 200;
 	}
 	else
 	{
-		strcpy(res.statusPhrase, "Not Found");
-		res.responseCode = 404;
+		strcpy(resPtr->statusPhrase, "Not Found");
+		resPtr->responseCode = 404;
 	}
+}
+
+HttpResponse handleGetRequest(HttpRequest req)
+{
+	operateQuery(req.url); //takes care language parameters and default document name
+
+	HttpResponse res;
+	int stat = getFileObject(req.url, &res.content, &res.contentLengthHeader);
+	fillResponseHeaders(&res, stat, req.url);
 	return res;
 }
 
@@ -224,8 +226,12 @@ HttpResponse handleOptionsRequest(HttpRequest req)
 
 HttpResponse handleHeadRequest(HttpRequest req)
 {
-	cout << "handleHeadRequest Not Implemented!";
-	return HttpResponse();
+	operateQuery(req.url); //takes care language parameters and default document name
+
+	HttpResponse res;
+	int stat = getFileLen(req.url, &res.contentLengthHeader);
+	fillResponseHeaders(&res, stat, req.url);
+	return res;
 }
 
 HttpResponse handleDeleteRequest(HttpRequest req)

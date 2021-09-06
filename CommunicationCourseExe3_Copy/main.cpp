@@ -324,22 +324,22 @@ void sendMessage(int index)
 		response = handleGetRequest(sockets[index].req1);
 		break;
 	case POST:
-		//response = handlePostRequest(sockets[index].req1);
+		response = handlePostRequest(sockets[index].req1);
 		break;
 	case PUT:
-		//response = handlePutRequest(sockets[index].req1);
+		response = handlePutRequest(sockets[index].req1);
 		break;
 	case TRACE:
-		//response = handleTraceRequest(sockets[index].req1);
+		response = handleTraceRequest(sockets[index].req1);
 		break;
 	case OPTIONS:
-		//response = handleOptionsRequest(sockets[index].req1);
+		response = handleOptionsRequest(sockets[index].req1);
 		break;
 	case HEAD:
-		//response = handleHeadRequest(sockets[index].req1);
+		response = handleHeadRequest(sockets[index].req1);
 		break;
 	case DEL:
-		//response = handleDeleteRequest(sockets[index].req1);
+		response = handleDeleteRequest(sockets[index].req1);
 		break;
 	}
 	//to do : free malloc of data for request
