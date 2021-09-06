@@ -10,6 +10,7 @@ using namespace std;
 
 
 #define PATH_BUFFER_SIZE 255
+#define HTTP_TIME_FORMAT_STR_GMT "%a, %d %b %Y %X GMT"
 
 void addFilesFolderToPath(char* url, char* buffer)
 {
@@ -38,9 +39,16 @@ int getFileObject(char* path, char** filelContentPtr, int* contentLenPtr)
 	*contentLenPtr = ftell(filePointer); //get pointer to the end of the file
 	fseek(filePointer, 0L, SEEK_SET); //go back to begining of the file
 	*filelContentPtr = (char*)malloc(*contentLenPtr); //allocate memory for the content
-	fread(*filelContentPtr,  1, *contentLenPtr, filePointer);
+	int contentLenRead = 0;
+	while (fgets(*filelContentPtr + contentLenRead, *contentLenPtr, filePointer) != NULL)
+	{
+		if (*filelContentPtr != NULL)
+		{
+			contentLenRead = strlen(*filelContentPtr);
+		}
+	};
 	fclose(filePointer);
-	//cout << *filelContentPtr;
+	cout << "\ncontent is:\n" <<  *filelContentPtr << "\n";
 	return SUCCESS;
 }
 
@@ -81,5 +89,5 @@ void getLastModifiedDate(char* path, char* buffer)
 
 	tm time;
 	gmtime_s(&time, &(attrib.st_mtime));
-	strftime(buffer, PATH_BUFFER_SIZE, "%d %b, %Y %X", &time);
+	strftime(buffer, PATH_BUFFER_SIZE, HTTP_TIME_FORMAT_STR_GMT, &time);
 }

@@ -120,7 +120,9 @@
     <ClInclude Include="http.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="server_files\index.html" />
+    <None Include="server_files\en\index.html" />
+    <None Include="server_files\fr\index.html" />
+    <None Include="server_files\he\index.html" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

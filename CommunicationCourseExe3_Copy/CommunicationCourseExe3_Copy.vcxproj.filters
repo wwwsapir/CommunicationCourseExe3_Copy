@@ -16,6 +16,15 @@
     <Filter Include="Source Files\server_files">
       <UniqueIdentifier>{e4fd8f06-eb19-40ae-bea2-a0d25ec71a10}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\server_files\fr">
+      <UniqueIdentifier>{68171e20-4c28-4fa4-8768-4684c82fa108}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\server_files\en">
+      <UniqueIdentifier>{7ce82567-d333-40ae-948d-92469389631f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\server_files\he">
+      <UniqueIdentifier>{006144e2-9c23-40b1-8b12-98c3aabbe76f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -37,8 +46,14 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="server_files\index.html">
-      <Filter>Source Files\server_files</Filter>
+    <None Include="server_files\fr\index.html">
+      <Filter>Source Files\server_files\fr</Filter>
+    </None>
+    <None Include="server_files\en\index.html">
+      <Filter>Source Files\server_files\en</Filter>
+    </None>
+    <None Include="server_files\he\index.html">
+      <Filter>Source Files\server_files\he</Filter>
     </None>
   </ItemGroup>
 </Project>

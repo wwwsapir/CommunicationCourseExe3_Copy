@@ -97,9 +97,32 @@ int parseHttpRequest(char *msg, int len, HttpRequest *reqPtr)
 
 int httpResponseToString(HttpResponse response, char buffer[])
 {
-	int r1 = sprintf(buffer, "%s %d %s\n%s", response.httpVersion, response.responseCode,response.statusPhrase,response.content);
-	cout << buffer;
-	return r1;
+	int length = sprintf(buffer, "%s %d %s\n", response.httpVersion, response.responseCode, response.statusPhrase);
+	if (strlen(response.serverHeader) > 0)
+	{
+		length += sprintf(buffer + length, "Server: %s\n", response.serverHeader);
+	}
+	if (strlen(response.contentTypeHeader) > 0)
+	{
+		length += sprintf(buffer + length, "Content-Type: %s\n", response.contentTypeHeader);
+	}
+	if (strlen(response.connectionHeader) > 0)
+	{
+		length += sprintf(buffer + length, "Connection: %s\n", response.connectionHeader);
+	}
+	if (strlen(response.lastModifiedHeader) > 0)
+	{
+		length += sprintf(buffer + length, "Last-Modified: %s\n", response.lastModifiedHeader);
+	}
+	length += sprintf(buffer + length, "Content-Length: %d\n\n", response.contentLengthHeader);
+	if (response.contentLengthHeader > 0)
+	{
+		length += sprintf(buffer + length, response.content);
+		free(response.content);
+	}
+
+	cout << "Response is:\n" << buffer << "\n";
+	return length;
 }
 
 HttpResponse handleGetRequest(HttpRequest req)
@@ -114,7 +137,6 @@ HttpResponse handleGetRequest(HttpRequest req)
 	if (stat == SUCCESS)
 	{
 		res.contentLengthHeader = contentLen;
-		strcpy(res.contentTypeHeader, "text/html");
 		getLastModifiedDate(req.url, res.lastModifiedHeader);
 		strcpy(res.statusPhrase, "OK");
 		res.responseCode = 200;
