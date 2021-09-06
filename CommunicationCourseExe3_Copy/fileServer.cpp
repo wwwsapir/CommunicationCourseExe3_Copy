@@ -29,7 +29,7 @@ int getFileObject(char* path, char** filelContentPtr, int* contentLenPtr)
 	char pathBuffer[PATH_BUFFER_SIZE];
 	addFilesFolderToPath(path, pathBuffer);
 
-	errno_t err = fopen_s(&filePointer, pathBuffer, "r"); //open file for read
+	errno_t err = fopen_s(&filePointer, pathBuffer, "r"); //open file for read 
 	if (err != 0)
 	{
 		return FILE_ERROR;
