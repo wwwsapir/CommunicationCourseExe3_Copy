@@ -27,17 +27,6 @@ const int RECEIVE = 2;
 const int IDLE = 3;
 const int SEND = 4;
 
-
-
-
-//const int GET = 1;
-//const int POST = 2;
-//const int PUT = 3;
-//const int DEL = 4;
-//const int OPTIONS = 5;
-//const int HEAD = 6;
-//const int TRACE = 7;
-
 bool addSocket(SOCKET id, int what);
 void removeSocket(int index);
 void acceptConnection(int index);
