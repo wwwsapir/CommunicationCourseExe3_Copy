@@ -160,7 +160,6 @@ void main()
 
 		for (int i = 0; i < MAX_SOCKETS && nfd > 0; i++)
 		{
-			cout << "SOCKETS: " << socketsCount << "\n";
 			if (FD_ISSET(sockets[i].id, &waitRecv))
 			{
 				nfd--;
@@ -195,7 +194,6 @@ void main()
 
 bool addSocket(SOCKET id, int what, SocketState sockets[], int* socketCountPtr)
 {
-	cout << "Adding socket - " << id << " - " << what << "\n";
 	// Set the socket to be in non-blocking mode.
 	unsigned long flag = 1;
 	if (ioctlsocket(id, FIONBIO, &flag) != 0)

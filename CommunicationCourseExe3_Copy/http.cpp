@@ -113,7 +113,7 @@ int parseHttpRequest(char *msg, int len, HttpRequest *reqPtr)
 
 			if (strcmp("\r", key) == STRINGS_EQUAL && reqPtr->contentLengthHeader > 0 && reqPtr->method != TRACE) //empty row before data - end of headers
 			{
-				reqPtr->content = (char *)malloc(reqPtr->contentLengthHeader);
+				reqPtr->content = (char *)malloc(reqPtr->contentLengthHeader + 1);
 				if(reqPtr->content != NULL && rest != NULL)
 					strcpy(reqPtr->content, rest);
 				inContentPartOfRequest = true;
@@ -252,7 +252,7 @@ HttpResponse handlePostRequest(HttpRequest req)
 		int contentLeft = req.contentLengthHeader;
 		char* line = req.content;
 		char* currStr;
-		cout << "Message from client POST request:\n";
+		cout << "---Message from client POST request:---\n";
 		currStr = strtok(line, "\0");
 		while (contentLeft > 0 && currStr != NULL)
 		{
@@ -260,8 +260,10 @@ HttpResponse handlePostRequest(HttpRequest req)
 			contentLeft -= strlen(currStr);
 			currStr = strtok(NULL, "\0");
 		}
+		cout << "-----------POST message end------------\n";
 	}
-	
+	else
+		cout << "---POST request body is empty. No strings to print.---\n";
 	HttpResponse res;
 	fillResponseHeaders(&res, SUCCESS, req.url);
 	return res;
