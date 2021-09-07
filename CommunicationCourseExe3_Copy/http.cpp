@@ -5,8 +5,11 @@
 #include "fileServer.h"
 using namespace std;
 
-void deleteRequest(HttpRequest* reqPtr)
+void deleteRequest(HttpRequest* reqPtr, int freeContent)
 {
+	if (freeContent == FREE_CONTENT && reqPtr->content != NULL)
+		free(reqPtr->content);
+
 	reqPtr->isEmpty = EMPTY_REQ;
 	reqPtr->method = -1;
 	reqPtr->url[0] = '\0';
@@ -103,7 +106,7 @@ int parseHttpRequest(char *msg, int len, HttpRequest *reqPtr)
 
 			if (strcmp("\r", key) == STRINGS_EQUAL && reqPtr->contentLengthHeader > 0) //empty row before data - end of headers
 			{
-				reqPtr->content = (char *)malloc(reqPtr->contentLengthHeader);
+				reqPtr->content = (char *)malloc(reqPtr->contentLengthHeader + 1);
 				strcpy(reqPtr->content, rest);
 				inContentPartOfRequest = true;
 			}

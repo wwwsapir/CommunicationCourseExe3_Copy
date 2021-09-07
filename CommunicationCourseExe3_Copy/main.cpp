@@ -222,8 +222,8 @@ void removeSocket(int index, SocketState sockets[], int* socketCountPtr)
 	sockets[index].recv = EMPTY;
 	sockets[index].send = EMPTY;
 	(*socketCountPtr)--;
-	deleteRequest(&sockets[index].req1);
-	deleteRequest(&sockets[index].req2);
+	deleteRequest(&sockets[index].req1, FREE_CONTENT);
+	deleteRequest(&sockets[index].req2, FREE_CONTENT);
 }
 
 void acceptConnection(int index, SocketState sockets[], int* socketCountPtr)
@@ -320,13 +320,11 @@ void sendMessage(int index, SocketState sockets[], int* socketCountPtr)
 		response = handleDeleteRequest(sockets[index].req1);
 		break;
 	}
-	//to do : free malloc of data for request
-	//free(sockets[index].req1.content);
-	//sockets[index].req1.content = NULL;
+	deleteRequest(&sockets[index].req1, FREE_CONTENT);
+
 	char responseStrBuffer[10000] = EMPTY_STRING;
 	int responseLen = httpResponseToString(response, responseStrBuffer);
-	//to do : free malloc of data for responce
-	//free(response.content);
+
 	bytesSent = send(msgSocket, responseStrBuffer, responseLen, 0);
 	if (SOCKET_ERROR == bytesSent)
 	{
@@ -334,7 +332,7 @@ void sendMessage(int index, SocketState sockets[], int* socketCountPtr)
 		return;
 	}
 	cout << "HTTP Server: " << bytesSent << " bytes sent" << "\n";
-	// If there's a second message waiting for response then move it to be the first one
+	// If there's a second message waiting for response then move it to be the first "in line". If not, make sending idle.
 	if (sockets[index].req2.isEmpty == EMPTY_REQ)
 	{
 		sockets[index].send = IDLE;
@@ -342,6 +340,6 @@ void sendMessage(int index, SocketState sockets[], int* socketCountPtr)
 	else
 	{
 		sockets[index].req1 = sockets[index].req2;
-		deleteRequest(&sockets[index].req2);
+		deleteRequest(&sockets[index].req2, LEAVE_CONTENT_AS_IS);
 	}
 }
