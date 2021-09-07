@@ -8,7 +8,6 @@ using namespace std;
 #include <string.h>
 #include <iostream>
 
-
 #define PATH_BUFFER_SIZE 255
 #define HTTP_TIME_FORMAT_STR_GMT "%a, %d %b %Y %X GMT"
 
@@ -24,7 +23,7 @@ void addFilesFolderToPath(char* url, char* buffer)
 	sprintf_s(buffer, PATH_BUFFER_SIZE, "server_files%s", url);
 }
 
-int getFileObject(char* path, char** filelContentPtr, int* contentLenPtr)
+int getFileObject(char* path, char** filelContentPtr, int* contentLenPtr, int fillContent)
 {
 	int stat = getFileLen(path, contentLenPtr);
 	if (stat != SUCCESS)
@@ -54,6 +53,11 @@ int getFileObject(char* path, char** filelContentPtr, int* contentLenPtr)
 	};
 	fclose(filePointer);
 	*contentLenPtr -= (linesCounter - 1);	// Work-around for windows /n/r (two chars) in newline.
+	if (fillContent == NO_CONTENT)
+	{
+		free(*filelContentPtr);
+		*filelContentPtr = NULL;
+	}
 	return SUCCESS;
 }
 

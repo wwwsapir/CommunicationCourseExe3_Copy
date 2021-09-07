@@ -223,7 +223,7 @@ HttpResponse handleGetRequest(HttpRequest req)
 	operateQuery(req.url); //takes care language parameters and default document name
 
 	HttpResponse res;
-	int stat = getFileObject(req.url, &res.content, &res.contentLengthHeader);
+	int stat = getFileObject(req.url, &res.content, &res.contentLengthHeader, FILL_CONTENT);
 	fillResponseHeaders(&res, stat, req.url);
 	return res;
 }
@@ -297,7 +297,7 @@ HttpResponse handleHeadRequest(HttpRequest req)
 	operateQuery(req.url); //takes care language parameters and default document name
 
 	HttpResponse res;
-	int stat = getFileLen(req.url, &res.contentLengthHeader);
+	int stat = getFileObject(req.url, &res.content, &res.contentLengthHeader, NO_CONTENT);
 	fillResponseHeaders(&res, stat, req.url);
 	return res;
 }
