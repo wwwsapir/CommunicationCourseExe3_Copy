@@ -58,30 +58,41 @@ int parseHttpRequest(char *msg, int len, HttpRequest *reqPtr)
 		return INVALID_HTTP_MSG;
 	}
 	msg[len] = '\0';
-	cout << msg;
 	char* rest = msg;
+
 
 	char* line = strtok_s(msg, "\n", &rest);
 	int lineID = 0;
+	bool inContentPartOfRequest = false;
 
-	while (line != NULL && lineID >= 0) {
-		cout << line << "\n";
+	while (line != NULL && lineID >= 0 && !inContentPartOfRequest) {
+		cout << "parseHttpRequest lineID: "<< lineID << " line: " << line << "\n";
 		if (lineID == 0) //method url version
 		{
 			if (parseMethod(line, reqPtr) == INVALID_HTTP_MSG)
 			{
 				return INVALID_HTTP_MSG;
 			}
+
+			//save raw request for trace method
+			if (reqPtr->method == TRACE)
+			{
+				reqPtr->rawRequest = (char*)malloc(len);
+				if (reqPtr->rawRequest !=NULL)
+					strcpy(reqPtr->rawRequest, msg);
+			}
 		}
-		else 
+		else
 		{
 			char* key = strtok(line, ":");
 			char* value = strtok(NULL, "\r") + 1; //+1 skip space
 
-			if (strcmp("\r", key) != STRINGS_EQUAL && reqPtr->contentLengthHeader > 0) //empty row before data - end of headers
+			if (strcmp("\r", key) == STRINGS_EQUAL && reqPtr->contentLengthHeader > 0) //empty row before data - end of headers
 			{
 				reqPtr->content = (char *)malloc(reqPtr->contentLengthHeader);
-				strcpy(reqPtr->content, rest);
+				if(reqPtr->content != NULL)
+					strcpy(reqPtr->content, rest);
+				inContentPartOfRequest = true;
 			}
 			else
 			{
@@ -97,9 +108,50 @@ int parseHttpRequest(char *msg, int len, HttpRequest *reqPtr)
 
 int httpResponseToString(HttpResponse response, char buffer[])
 {
-	int r1 = sprintf(buffer, "%s %d %s\n%s", response.httpVersion, response.responseCode,response.statusPhrase,response.content);
-	cout << buffer;
-	return r1;
+	char httpDate[1000];
+	time_t now = time(0);
+	struct tm tm = *gmtime(&now);
+	strftime(httpDate, sizeof httpDate, "%a, %d %b %Y %H:%M:%S %Z", &tm);
+
+	int r1 = 0;
+	char baseHeaders[1000] = EMPTY_STRING;
+	r1 = sprintf(baseHeaders, "%s %d %s\nServer: %s\nConnection: %s\nDate: %s\n",
+		response.httpVersion,
+		response.responseCode,
+		response.statusPhrase,
+		response.serverHeader,
+		response.connectionHeader,
+		httpDate);
+
+	if (response.contentLengthHeader > 0) 
+	{
+		//response has content
+		r1 = r1 + sprintf(buffer, "%sContent-Length: %d\nLast-Modified: %s\nContent-Type: %s\n\n%s\n",
+			baseHeaders,
+			response.contentLengthHeader,
+			response.lastModifiedHeader,
+			response.contentTypeHeader,
+			response.content);
+	}
+	else
+	{
+		//resonse only headers
+		if (strlen(response.allowHeader) > 0) //OPTIONS responce extention
+		{
+			r1 = r1 + sprintf(buffer, "%sAllow: %s\nContent-Length: 0\n", baseHeaders, response.allowHeader);
+		}
+		else
+		{
+			r1 = r1 + sprintf(buffer, "%sContent-Length: 0\n", baseHeaders);
+		}
+		
+	}
+
+	//debug log
+	cout << "httpResponseToString : finished , response length : " << r1 << " - " << strlen(buffer) << "\n";
+	cout << "Response : " << "\n";
+	cout << buffer << "\n";
+	return strlen(buffer);
 }
 
 HttpResponse handleGetRequest(HttpRequest req)
@@ -184,20 +236,44 @@ HttpResponse handlePostRequest(HttpRequest req)
 
 HttpResponse handlePutRequest(HttpRequest req)
 {
-	cout << "handlePutRequest Not Implemented!";
-	return HttpResponse();
+	HttpResponse res;
+
+	operateQuery(req.url); //takes care language parameters and default document name
+
+	int stat = createFileObject(req.url, req.content);
+	if (stat == SUCCESS)
+	{
+		strcpy(res.statusPhrase, "OK");
+		res.responseCode = 200;
+	}
+	else
+	{
+		strcpy(res.statusPhrase, "Internal Server Error");
+		res.responseCode = 500;
+	}
+	strcpy(res.connectionHeader, req.connectionHeader);
+	return res;
 }
 
 HttpResponse handleTraceRequest(HttpRequest req)
 {
-	cout << "handleTraceRequest Not Implemented!";
-	return HttpResponse();
+	HttpResponse res;
+	res.responseCode = 200;
+	strcpy(res.statusPhrase, "OK");
+	strcpy(res.contentTypeHeader, "message/http");
+	strcpy(res.connectionHeader, req.connectionHeader);
+
+	return res;
 }
 
 HttpResponse handleOptionsRequest(HttpRequest req)
 {
-	cout << "handleOptionsRequest Not Implemented!";
-	return HttpResponse();
+	HttpResponse res;
+	strcpy(res.statusPhrase, "No Content");
+	res.responseCode = 204;
+	strcpy(res.connectionHeader, req.connectionHeader);
+	strcpy(res.allowHeader, "GET, POST, PUT, DELETE, OPTIONS, HEAD, TRACE");
+	return res;
 }
 
 HttpResponse handleHeadRequest(HttpRequest req)

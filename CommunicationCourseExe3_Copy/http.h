@@ -9,7 +9,7 @@
 #define EMPTY_STRING "\0"
 #define NULL 0
 enum httpMethodsEnum { GET, POST, PUT, DEL, OPTIONS, HEAD, TRACE };
-const char httpMethods[NUMBER_OF_OPTIONS][MAX_OPTION_SIZE] = { "GET", "POST", "PUT", "DEL", "OPTIONS", "HEAD", "TRACE" };
+const char httpMethods[NUMBER_OF_OPTIONS][MAX_OPTION_SIZE] = { "GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "TRACE" };
 
 
 struct HttpRequest
@@ -24,13 +24,14 @@ struct HttpRequest
 	int contentLengthHeader = 0;
 
 	char* content = NULL;
+	char* rawRequest = NULL;
 };
 
 struct HttpResponse
 {
 	char httpVersion[9] = "HTTP/1.1";
 	int responseCode = -1;
-	char statusPhrase[16] = EMPTY_STRING;
+	char statusPhrase[36] = EMPTY_STRING;
 
 	char connectionHeader[255] = EMPTY_STRING;
 	char contentTypeHeader[255] = EMPTY_STRING;
@@ -38,6 +39,7 @@ struct HttpResponse
 	char serverHeader[11] = "Windows 10";
 	int contentLengthHeader = 0;
 
+	char allowHeader[255] = EMPTY_STRING;
 	char* content = NULL;
 };
 

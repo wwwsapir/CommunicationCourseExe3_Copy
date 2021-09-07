@@ -6,3 +6,4 @@ int getFileObject(char* path, char** filelContentPtr, int* contentLenPtr); //f1
 int createFileObject(char* path, char* newFileContent);
 int deleteFileObject(char* path);
 void getLastModifiedDate(char* path, char* buffer);
+int getFileLen(char* path, int* contentLenPtr);

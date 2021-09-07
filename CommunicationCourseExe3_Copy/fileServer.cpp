@@ -25,7 +25,34 @@ void addFilesFolderToPath(char* url, char* buffer)
 
 int getFileObject(char* path, char** filelContentPtr, int* contentLenPtr)
 {
-	FILE *filePointer;
+	int stat = getFileLen(path, contentLenPtr);
+	if (stat != SUCCESS)
+	{
+		return FILE_ERROR;
+	}
+
+	FILE* filePointer;
+	char pathBuffer[PATH_BUFFER_SIZE];
+	addFilesFolderToPath(path, pathBuffer);
+
+	fopen_s(&filePointer, pathBuffer, "r"); //open file for read (must succeed because getFileLen succeeded)
+	*filelContentPtr = (char*)malloc(*contentLenPtr); //allocate memory for the content
+	int contentLenRead = 0;
+	while (fgets(*filelContentPtr + contentLenRead, *contentLenPtr, filePointer) != NULL)
+	{
+		if (*filelContentPtr != NULL)
+		{
+			contentLenRead = strlen(*filelContentPtr);
+		}
+	};
+	fclose(filePointer);
+	//cout << "\ncontent is:\n" <<  *filelContentPtr << "\n";
+	return SUCCESS;
+}
+
+int getFileLen(char* path, int* contentLenPtr)
+{
+	FILE* filePointer;
 	char pathBuffer[PATH_BUFFER_SIZE];
 	addFilesFolderToPath(path, pathBuffer);
 
@@ -36,13 +63,10 @@ int getFileObject(char* path, char** filelContentPtr, int* contentLenPtr)
 	}
 	fseek(filePointer, 0L, SEEK_END); //go to end of the file
 	*contentLenPtr = ftell(filePointer); //get pointer to the end of the file
-	fseek(filePointer, 0L, SEEK_SET); //go back to begining of the file
-	*filelContentPtr = (char*)malloc(*contentLenPtr); //allocate memory for the content
-	fread(*filelContentPtr,  1, *contentLenPtr, filePointer);
 	fclose(filePointer);
-	//cout << *filelContentPtr;
 	return SUCCESS;
 }
+
 
 int createFileObject(char* path, char* newFileContent)
 {
@@ -54,7 +78,9 @@ int createFileObject(char* path, char* newFileContent)
 	{
 		return FILE_ERROR;
 	}
-	fprintf(filePointer, newFileContent);
+	//fprintf(filePointer,"%s", newFileContent);
+	fputs(newFileContent, filePointer);
+	fclose(filePointer);
 	return SUCCESS;
 }
 

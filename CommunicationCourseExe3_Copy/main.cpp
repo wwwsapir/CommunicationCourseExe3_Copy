@@ -284,7 +284,6 @@ void receiveMessage(int index)
 
 	HttpRequest req;
 	int isValid = parseHttpRequest(reqBuffer, bytesRecv, &req);
-	//cout << req.content << "\n";
 	if (isValid == INVALID_HTTP_MSG)
 	{
 		return; //todo : return meaningfull error if type known
@@ -327,32 +326,35 @@ void sendMessage(int index)
 		//response = handlePostRequest(sockets[index].req1);
 		break;
 	case PUT:
-		//response = handlePutRequest(sockets[index].req1);
+		response = handlePutRequest(sockets[index].req1);
 		break;
 	case TRACE:
-		//response = handleTraceRequest(sockets[index].req1);
+		response = handleTraceRequest(sockets[index].req1);
 		break;
 	case OPTIONS:
-		//response = handleOptionsRequest(sockets[index].req1);
+		response = handleOptionsRequest(sockets[index].req1);
 		break;
 	case HEAD:
 		//response = handleHeadRequest(sockets[index].req1);
 		break;
 	case DEL:
-		//response = handleDeleteRequest(sockets[index].req1);
+		response = handleDeleteRequest(sockets[index].req1);
 		break;
 	}
 	//to do : free malloc of data for request
-	char responseStrBuffer[10000];
+	//free(sockets[index].req1.content);
+	sockets[index].req1.content = NULL;
+	char responseStrBuffer[10000] = EMPTY_STRING;
 	int responseLen = httpResponseToString(response, responseStrBuffer);
 	//to do : free malloc of data for responce
+	//free(response.content);
 	bytesSent = send(msgSocket, responseStrBuffer, responseLen, 0);
 	if (SOCKET_ERROR == bytesSent)
 	{
 		cout << "HTTP Server: Error at send(): " << WSAGetLastError() << endl;
 		return;
 	}
-
+	cout << "HTTP Server: " << bytesSent << " bytes sent" << "\n";
 	// If there's a second message waiting for response then move it to be the first one
 	if (sockets[index].req2.isEmpty == EMPTY_REQ)
 	{
