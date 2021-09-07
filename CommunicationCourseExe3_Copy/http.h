@@ -24,7 +24,6 @@ struct HttpRequest
 	int contentLengthHeader = 0;
 
 	char* content = NULL;
-	char* rawRequest = NULL;
 };
 
 struct HttpResponse
