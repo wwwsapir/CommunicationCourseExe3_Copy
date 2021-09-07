@@ -90,8 +90,7 @@ int parseHttpRequest(char *msg, int len, HttpRequest *reqPtr)
 			if (strcmp("\r", key) == STRINGS_EQUAL && reqPtr->contentLengthHeader > 0) //empty row before data - end of headers
 			{
 				reqPtr->content = (char *)malloc(reqPtr->contentLengthHeader);
-				if(reqPtr->content != NULL)
-					strcpy(reqPtr->content, rest);
+				strcpy(reqPtr->content, rest);
 				inContentPartOfRequest = true;
 			}
 			else
@@ -108,75 +107,32 @@ int parseHttpRequest(char *msg, int len, HttpRequest *reqPtr)
 
 int httpResponseToString(HttpResponse response, char buffer[])
 {
-	char httpDate[1000];
-	time_t now = time(0);
-	struct tm tm = *gmtime(&now);
-	strftime(httpDate, sizeof httpDate, "%a, %d %b %Y %H:%M:%S %Z", &tm);
-
-	int r1 = 0;
-	char baseHeaders[1000] = EMPTY_STRING;
-	r1 = sprintf(baseHeaders, "%s %d %s\nServer: %s\nConnection: %s\nDate: %s\n",
-		response.httpVersion,
-		response.responseCode,
-		response.statusPhrase,
-		response.serverHeader,
-		response.connectionHeader,
-		httpDate);
-
-	if (response.contentLengthHeader > 0) 
+	int length = sprintf(buffer, "%s %d %s\n", response.httpVersion, response.responseCode, response.statusPhrase);
+	if (strlen(response.serverHeader) > 0)
 	{
-		//response has content
-		r1 = r1 + sprintf(buffer, "%sContent-Length: %d\nLast-Modified: %s\nContent-Type: %s\n\n%s\n",
-			baseHeaders,
-			response.contentLengthHeader,
-			response.lastModifiedHeader,
-			response.contentTypeHeader,
-			response.content);
+		length += sprintf(buffer + length, "Server: %s\n", response.serverHeader);
 	}
-	else
+	if (strlen(response.contentTypeHeader) > 0)
 	{
-		//resonse only headers
-		if (strlen(response.allowHeader) > 0) //OPTIONS responce extention
-		{
-			r1 = r1 + sprintf(buffer, "%sAllow: %s\nContent-Length: 0\n", baseHeaders, response.allowHeader);
-		}
-		else
-		{
-			r1 = r1 + sprintf(buffer, "%sContent-Length: 0\n", baseHeaders);
-		}
-		
+		length += sprintf(buffer + length, "Content-Type: %s\n", response.contentTypeHeader);
+	}
+	if (strlen(response.connectionHeader) > 0)
+	{
+		length += sprintf(buffer + length, "Connection: %s\n", response.connectionHeader);
+	}
+	if (strlen(response.lastModifiedHeader) > 0)
+	{
+		length += sprintf(buffer + length, "Last-Modified: %s\n", response.lastModifiedHeader);
+	}
+	length += sprintf(buffer + length, "Content-Length: %d\n\n", response.contentLengthHeader);
+	if (response.content != NULL)
+	{
+		length += sprintf(buffer + length, response.content);
+		free(response.content);
 	}
 
-	//debug log
-	cout << "httpResponseToString : finished , response length : " << r1 << " - " << strlen(buffer) << "\n";
-	cout << "Response : " << "\n";
-	cout << buffer << "\n";
-	return strlen(buffer);
-}
-
-HttpResponse handleGetRequest(HttpRequest req)
-{
-	HttpResponse res;
-	int contentLen;
-
-	operateQuery(req.url); //takes care language parameters and default documet name
-
-	int stat = getFileObject(req.url, &res.content, &contentLen); //f1
-	strcpy(res.connectionHeader, "keep-alive"); //todo :change responce keep-alive to requested
-	if (stat == SUCCESS)
-	{
-		res.contentLengthHeader = contentLen;
-		strcpy(res.contentTypeHeader, "text/html");
-		getLastModifiedDate(req.url, res.lastModifiedHeader);
-		strcpy(res.statusPhrase, "OK");
-		res.responseCode = 200;
-	}
-	else
-	{
-		strcpy(res.statusPhrase, "Not Found");
-		res.responseCode = 404;
-	}
-	return res;
+	cout << "Response is:\n" << buffer << "\n";
+	return length;
 }
 
 void operateQuery(char* url)
@@ -228,10 +184,52 @@ int getQueryParameter(char* query, char* parametr, char value[])
 	return valueLength;
 }
 
+void fillResponseHeaders(HttpResponse* resPtr, int opStat, char* url)
+{
+	strcpy(resPtr->connectionHeader, "keep-alive");
+	if (opStat == SUCCESS)
+	{
+		getLastModifiedDate(url, resPtr->lastModifiedHeader);
+		strcpy(resPtr->statusPhrase, "OK");
+		resPtr->responseCode = 200;
+	}
+	else
+	{
+		strcpy(resPtr->statusPhrase, "Not Found");
+		resPtr->responseCode = 404;
+	}
+}
+
+HttpResponse handleGetRequest(HttpRequest req)
+{
+	operateQuery(req.url); //takes care language parameters and default document name
+
+	HttpResponse res;
+	int stat = getFileObject(req.url, &res.content, &res.contentLengthHeader);
+	fillResponseHeaders(&res, stat, req.url);
+	return res;
+}
+
 HttpResponse handlePostRequest(HttpRequest req)
 {
-	cout << "handlePostRequest Not Implemented!";
-	return HttpResponse();
+	if (req.contentLengthHeader > 0)
+	{
+		int contentLeft = req.contentLengthHeader;
+		char* line = req.content;
+		char* currStr;
+		cout << "Message from client POST request:\n";
+		currStr = strtok(line, "\0");
+		while (contentLeft > 0 && currStr != NULL)
+		{
+			cout << currStr << "\n";
+			contentLeft -= strlen(currStr);
+			currStr = strtok(NULL, "\0");
+		}
+	}
+	
+	HttpResponse res;
+	fillResponseHeaders(&res, SUCCESS, req.url);
+	return res;
 }
 
 HttpResponse handlePutRequest(HttpRequest req)
@@ -278,8 +276,12 @@ HttpResponse handleOptionsRequest(HttpRequest req)
 
 HttpResponse handleHeadRequest(HttpRequest req)
 {
-	cout << "handleHeadRequest Not Implemented!";
-	return HttpResponse();
+	operateQuery(req.url); //takes care language parameters and default document name
+
+	HttpResponse res;
+	int stat = getFileLen(req.url, &res.contentLengthHeader);
+	fillResponseHeaders(&res, stat, req.url);
+	return res;
 }
 
 HttpResponse handleDeleteRequest(HttpRequest req)

@@ -288,7 +288,8 @@ void receiveMessage(int index)
 	{
 		return; //todo : return meaningfull error if type known
 	}
-	else if (strcmp(req.connectionHeader, "close") == 0)
+	else if (strcmp(req.connectionHeader, "close") == STRINGS_EQUAL ||
+		strcmp(req.connectionHeader, "Close") == STRINGS_EQUAL)
 	{
 		closesocket(msgSocket);
 		removeSocket(index);
@@ -323,7 +324,7 @@ void sendMessage(int index)
 		response = handleGetRequest(sockets[index].req1);
 		break;
 	case POST:
-		//response = handlePostRequest(sockets[index].req1);
+		response = handlePostRequest(sockets[index].req1);
 		break;
 	case PUT:
 		response = handlePutRequest(sockets[index].req1);
@@ -335,7 +336,7 @@ void sendMessage(int index)
 		response = handleOptionsRequest(sockets[index].req1);
 		break;
 	case HEAD:
-		//response = handleHeadRequest(sockets[index].req1);
+		response = handleHeadRequest(sockets[index].req1);
 		break;
 	case DEL:
 		response = handleDeleteRequest(sockets[index].req1);
