@@ -36,18 +36,24 @@ int getFileObject(char* path, char** filelContentPtr, int* contentLenPtr)
 	char pathBuffer[PATH_BUFFER_SIZE];
 	addFilesFolderToPath(path, pathBuffer);
 
-	fopen_s(&filePointer, pathBuffer, "r"); //open file for read (must succeed because getFileLen succeeded)
+	fopen_s(&filePointer, pathBuffer, "r"); //open file for read
+	if (filePointer == NULL)
+	{
+		return FILE_ERROR;
+	}
 	*filelContentPtr = (char*)malloc(*contentLenPtr); //allocate memory for the content
 	int contentLenRead = 0;
+	int linesCounter = 0;
 	while (fgets(*filelContentPtr + contentLenRead, *contentLenPtr, filePointer) != NULL)
 	{
 		if (*filelContentPtr != NULL)
 		{
 			contentLenRead = strlen(*filelContentPtr);
+			linesCounter += 1;
 		}
 	};
 	fclose(filePointer);
-	//cout << "\ncontent is:\n" <<  *filelContentPtr << "\n";
+	*contentLenPtr -= (linesCounter - 1);	// Work-around for windows /n/r (two chars) in newline.
 	return SUCCESS;
 }
 
