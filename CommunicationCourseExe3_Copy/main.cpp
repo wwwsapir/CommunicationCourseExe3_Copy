@@ -289,7 +289,8 @@ void receiveMessage(int index)
 	{
 		return; //todo : return meaningfull error if type known
 	}
-	else if (strcmp(req.connectionHeader, "close") == 0)
+	else if (strcmp(req.connectionHeader, "close") == STRINGS_EQUAL ||
+		strcmp(req.connectionHeader, "Close") == STRINGS_EQUAL)
 	{
 		closesocket(msgSocket);
 		removeSocket(index);

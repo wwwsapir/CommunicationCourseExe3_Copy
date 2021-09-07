@@ -78,10 +78,13 @@ int parseHttpRequest(char *msg, int len, HttpRequest *reqPtr)
 			char* key = strtok(line, ":");
 			char* value = strtok(NULL, "\r") + 1; //+1 skip space
 
-			if (strcmp("\r", key) != STRINGS_EQUAL && reqPtr->contentLengthHeader > 0) //empty row before data - end of headers
+			if (strcmp("\r", key) == STRINGS_EQUAL && reqPtr->contentLengthHeader > 0) //empty row before data - end of headers
 			{
 				reqPtr->content = (char *)malloc(reqPtr->contentLengthHeader);
-				strcpy(reqPtr->content, rest);
+				if (reqPtr->content != NULL && rest != NULL)
+				{
+					strcpy(reqPtr->content, rest);
+				}
 			}
 			else
 			{
@@ -123,32 +126,6 @@ int httpResponseToString(HttpResponse response, char buffer[])
 
 	cout << "Response is:\n" << buffer << "\n";
 	return length;
-}
-
-void fillResponseHeaders(HttpResponse* resPtr, int opStat, char* url)
-{
-	strcpy(resPtr->connectionHeader, "keep-alive");
-	if (opStat == SUCCESS)
-	{
-		getLastModifiedDate(url, resPtr->lastModifiedHeader);
-		strcpy(resPtr->statusPhrase, "OK");
-		resPtr->responseCode = 200;
-	}
-	else
-	{
-		strcpy(resPtr->statusPhrase, "Not Found");
-		resPtr->responseCode = 404;
-	}
-}
-
-HttpResponse handleGetRequest(HttpRequest req)
-{
-	operateQuery(req.url); //takes care language parameters and default document name
-
-	HttpResponse res;
-	int stat = getFileObject(req.url, &res.content, &res.contentLengthHeader);
-	fillResponseHeaders(&res, stat, req.url);
-	return res;
 }
 
 void operateQuery(char* url)
@@ -200,10 +177,52 @@ int getQueryParameter(char* query, char* parametr, char value[])
 	return valueLength;
 }
 
+void fillResponseHeaders(HttpResponse* resPtr, int opStat, char* url)
+{
+	strcpy(resPtr->connectionHeader, "keep-alive");
+	if (opStat == SUCCESS)
+	{
+		getLastModifiedDate(url, resPtr->lastModifiedHeader);
+		strcpy(resPtr->statusPhrase, "OK");
+		resPtr->responseCode = 200;
+	}
+	else
+	{
+		strcpy(resPtr->statusPhrase, "Not Found");
+		resPtr->responseCode = 404;
+	}
+}
+
+HttpResponse handleGetRequest(HttpRequest req)
+{
+	operateQuery(req.url); //takes care language parameters and default document name
+
+	HttpResponse res;
+	int stat = getFileObject(req.url, &res.content, &res.contentLengthHeader);
+	fillResponseHeaders(&res, stat, req.url);
+	return res;
+}
+
 HttpResponse handlePostRequest(HttpRequest req)
 {
-	cout << "handlePostRequest Not Implemented!";
-	return HttpResponse();
+	if (req.contentLengthHeader > 0)
+	{
+		int contentLeft = req.contentLengthHeader;
+		char* line = req.content;
+		char* currStr;
+		cout << "Message from client POST request:\n";
+		currStr = strtok(line, "\0");
+		while (contentLeft > 0 && currStr != NULL)
+		{
+			cout << currStr << "\n";
+			contentLeft -= strlen(currStr);
+			currStr = strtok(NULL, "\0");
+		}
+	}
+	
+	HttpResponse res;
+	fillResponseHeaders(&res, SUCCESS, req.url);
+	return res;
 }
 
 HttpResponse handlePutRequest(HttpRequest req)
