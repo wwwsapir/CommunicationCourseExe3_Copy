@@ -54,3 +54,4 @@ HttpResponse handleHeadRequest(HttpRequest req);
 HttpResponse handleDeleteRequest(HttpRequest req);
 int getQueryParameter(char* query, char* parametr, char value[]);
 void operateQuery(char* url);
+void deleteRequest(HttpRequest* reqPtr);

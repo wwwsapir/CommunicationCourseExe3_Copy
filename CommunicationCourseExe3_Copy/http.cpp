@@ -5,6 +5,20 @@
 #include "fileServer.h"
 using namespace std;
 
+void deleteRequest(HttpRequest* reqPtr)
+{
+	reqPtr->isEmpty = EMPTY_REQ;
+	reqPtr->method = -1;
+	reqPtr->url[0] = '\0';
+
+	reqPtr->connectionHeader[0] = '\0';
+	reqPtr->contentTypeHeader[0] = '\0';
+	reqPtr->contentLengthHeader = 0;
+
+	reqPtr->content = NULL;
+	reqPtr->rawRequest = NULL;
+}
+
 int parseMethod(char * line, HttpRequest* reqPtr)
 {
 	char* part = strtok(line, " "); //method
