@@ -75,6 +75,10 @@ int parseHttpRequest(char *msg, int len, HttpRequest *reqPtr)
 		return INVALID_HTTP_MSG;
 	}
 	msg[len] = '\0';
+	//prep for TRACE
+	char* rawRequest = (char*)malloc(len*2);
+	if(rawRequest != NULL)
+		strcpy(rawRequest, msg);
 	char* rest = msg;
 
 
@@ -94,9 +98,12 @@ int parseHttpRequest(char *msg, int len, HttpRequest *reqPtr)
 			//save raw request for trace method
 			if (reqPtr->method == TRACE)
 			{
-				reqPtr->rawRequest = (char*)malloc(len);
-				if (reqPtr->rawRequest !=NULL)
-					strcpy(reqPtr->rawRequest, msg);
+				reqPtr->content = rawRequest;
+				reqPtr->contentLengthHeader = len;
+			}
+			else
+			{
+				free(rawRequest);
 			}
 		}
 		else
@@ -104,10 +111,11 @@ int parseHttpRequest(char *msg, int len, HttpRequest *reqPtr)
 			char* key = strtok(line, ":");
 			char* value = strtok(NULL, "\r") + 1; //+1 skip space
 
-			if (strcmp("\r", key) == STRINGS_EQUAL && reqPtr->contentLengthHeader > 0) //empty row before data - end of headers
+			if (strcmp("\r", key) == STRINGS_EQUAL && reqPtr->contentLengthHeader > 0 && reqPtr->method != TRACE) //empty row before data - end of headers
 			{
-				reqPtr->content = (char *)malloc(reqPtr->contentLengthHeader + 1);
-				strcpy(reqPtr->content, rest);
+				reqPtr->content = (char *)malloc(reqPtr->contentLengthHeader);
+				if(reqPtr->content != NULL && rest != NULL)
+					strcpy(reqPtr->content, rest);
 				inContentPartOfRequest = true;
 			}
 			else
@@ -137,18 +145,27 @@ int httpResponseToString(HttpResponse response, char buffer[])
 	{
 		length += sprintf(buffer + length, "Connection: %s\n", response.connectionHeader);
 	}
+	if (strlen(response.allowHeader) > 0)
+	{
+		length += sprintf(buffer + length, "Allow: %s\n", response.allowHeader);
+	}
 	if (strlen(response.lastModifiedHeader) > 0)
 	{
 		length += sprintf(buffer + length, "Last-Modified: %s\n", response.lastModifiedHeader);
 	}
 	length += sprintf(buffer + length, "Content-Length: %d\n\n", response.contentLengthHeader);
+	
 	if (response.content != NULL)
 	{
 		length += sprintf(buffer + length, response.content);
-		free(response.content);
+		//free(response.content);  // mem failure on TRACE method
 	}
+	
 
-	cout << "Response is (" << strlen(buffer) << "): \n" << buffer << "\n";
+	cout << "Response is (" << strlen(buffer) << " - " << length << "): \n";
+	cout << "--------------- start ---------------\n";	
+	cout << buffer;
+	cout << "---------------- end ----------------\n";
 	return strlen(buffer);
 }
 
@@ -278,7 +295,18 @@ HttpResponse handleTraceRequest(HttpRequest req)
 	strcpy(res.statusPhrase, "OK");
 	strcpy(res.contentTypeHeader, "message/http");
 	strcpy(res.connectionHeader, req.connectionHeader);
-
+	res.content = (char*)malloc(req.contentLengthHeader);
+	if(res.content != NULL)
+		strncpy(res.content, req.content,req.contentLengthHeader);
+	res.content[req.contentLengthHeader] = '\0';
+	//clear \n at the end of the original request
+	int i = req.contentLengthHeader;
+	while (res.content[i] == '\0' || res.content[i] == '\n')
+	{
+		res.content[i] = '\0';
+		i = i - 1;
+	}
+	res.contentLengthHeader = i;
 	return res;
 }
 
@@ -289,6 +317,7 @@ HttpResponse handleOptionsRequest(HttpRequest req)
 	res.responseCode = 204;
 	strcpy(res.connectionHeader, req.connectionHeader);
 	strcpy(res.allowHeader, "GET, POST, PUT, DELETE, OPTIONS, HEAD, TRACE");
+	res.contentLengthHeader = 0;
 	return res;
 }
 
