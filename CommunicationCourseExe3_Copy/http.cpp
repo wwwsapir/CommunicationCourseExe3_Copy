@@ -131,8 +131,8 @@ int httpResponseToString(HttpResponse response, char buffer[])
 		free(response.content);
 	}
 
-	cout << "Response is:\n" << buffer << "\n";
-	return length;
+	cout << "Response is (" << strlen(buffer) << "): \n" << buffer << "\n";
+	return strlen(buffer);
 }
 
 void operateQuery(char* url)
@@ -187,6 +187,7 @@ int getQueryParameter(char* query, char* parametr, char value[])
 void fillResponseHeaders(HttpResponse* resPtr, int opStat, char* url)
 {
 	strcpy(resPtr->connectionHeader, "keep-alive");
+	strcpy(resPtr->contentTypeHeader, "text/html; charset=UTF-8");
 	if (opStat == SUCCESS)
 	{
 		getLastModifiedDate(url, resPtr->lastModifiedHeader);

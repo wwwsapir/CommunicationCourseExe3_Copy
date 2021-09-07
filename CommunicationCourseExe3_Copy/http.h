@@ -34,7 +34,7 @@ struct HttpResponse
 	char statusPhrase[36] = EMPTY_STRING;
 
 	char connectionHeader[255] = EMPTY_STRING;
-	char contentTypeHeader[255] = "text/html; charset=UTF-8";
+	char contentTypeHeader[255] = EMPTY_STRING;
 	char lastModifiedHeader[255] = EMPTY_STRING;
 	char serverHeader[11] = "Windows 10";
 	int contentLengthHeader = 0;

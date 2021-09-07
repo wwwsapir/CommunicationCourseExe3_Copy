@@ -344,7 +344,7 @@ void sendMessage(int index)
 	}
 	//to do : free malloc of data for request
 	//free(sockets[index].req1.content);
-	sockets[index].req1.content = NULL;
+	//sockets[index].req1.content = NULL;
 	char responseStrBuffer[10000] = EMPTY_STRING;
 	int responseLen = httpResponseToString(response, responseStrBuffer);
 	//to do : free malloc of data for responce
