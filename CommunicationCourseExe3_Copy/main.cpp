@@ -295,7 +295,10 @@ void receiveMessage(int index, SocketState sockets[], int* socketCountPtr)
 	int isValid = parseHttpRequest(reqBuffer, bytesRecv, &req);
 	if (isValid == INVALID_HTTP_MSG)
 	{
-		return; //todo : return meaningfull error if type known
+		sockets[index].req1.isEmpty = NOT_EMPTY_REQ;
+		sockets[index].req1.isValid = INVALID_HTTP_MSG;
+		sockets[index].send = SEND;
+		return;
 	}
 	else if (strcmp(req.connectionHeader, "close") == STRINGS_EQUAL ||
 		strcmp(req.connectionHeader, "Close") == STRINGS_EQUAL)
@@ -314,6 +317,7 @@ void receiveMessage(int index, SocketState sockets[], int* socketCountPtr)
 			sockets[index].req2 = req;
 		}
 
+		sockets[index].req1.isValid = VALID_HTTP_MSG;
 		sockets[index].send = SEND;
 	}
 }
@@ -324,29 +328,36 @@ void sendMessage(int index, SocketState sockets[], int* socketCountPtr)
 
 	SOCKET msgSocket = sockets[index].id;
 	HttpResponse response;
-	switch (sockets[index].req1.method)
+	if (sockets[index].req1.isValid == VALID_HTTP_MSG)
 	{
-	case GET:
-		response = handleGetRequest(sockets[index].req1);
-		break;
-	case POST:
-		response = handlePostRequest(sockets[index].req1);
-		break;
-	case PUT:
-		response = handlePutRequest(sockets[index].req1);
-		break;
-	case TRACE:
-		response = handleTraceRequest(sockets[index].req1);
-		break;
-	case OPTIONS:
-		response = handleOptionsRequest(sockets[index].req1);
-		break;
-	case HEAD:
-		response = handleHeadRequest(sockets[index].req1);
-		break;
-	case DEL:
-		response = handleDeleteRequest(sockets[index].req1);
-		break;
+		switch (sockets[index].req1.method)
+		{
+		case GET:
+			response = handleGetRequest(sockets[index].req1);
+			break;
+		case POST:
+			response = handlePostRequest(sockets[index].req1);
+			break;
+		case PUT:
+			response = handlePutRequest(sockets[index].req1);
+			break;
+		case TRACE:
+			response = handleTraceRequest(sockets[index].req1);
+			break;
+		case OPTIONS:
+			response = handleOptionsRequest(sockets[index].req1);
+			break;
+		case HEAD:
+			response = handleHeadRequest(sockets[index].req1);
+			break;
+		case DEL:
+			response = handleDeleteRequest(sockets[index].req1);
+			break;
+		}
+	}
+	else  // Invalid http request
+	{
+		response = handleInvalidRequest(sockets[index].req1);
 	}
 	deleteRequest(&sockets[index].req1, FREE_CONTENT);
 

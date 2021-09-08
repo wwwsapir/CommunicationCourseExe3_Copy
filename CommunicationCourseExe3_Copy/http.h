@@ -11,6 +11,7 @@
 
 #define FREE_CONTENT 1
 #define LEAVE_CONTENT_AS_IS 0
+
 enum httpMethodsEnum { GET, POST, PUT, DEL, OPTIONS, HEAD, TRACE };
 const char httpMethods[NUMBER_OF_OPTIONS][MAX_OPTION_SIZE] = { "GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "TRACE" };
 
@@ -18,6 +19,7 @@ const char httpMethods[NUMBER_OF_OPTIONS][MAX_OPTION_SIZE] = { "GET", "POST", "P
 struct HttpRequest
 {
 	char isEmpty = EMPTY_REQ;
+	char isValid = VALID_HTTP_MSG;
 	int method = -1;
 	char url[1024] = EMPTY_STRING;
 	char httpVersion[9];
@@ -58,3 +60,4 @@ HttpResponse handleDeleteRequest(HttpRequest req);
 int getQueryParameter(char* query, char* parametr, char value[]);
 void operateQuery(char* url);
 void deleteRequest(HttpRequest* reqPtr, int freeContent);
+HttpResponse handleInvalidRequest(HttpRequest req);

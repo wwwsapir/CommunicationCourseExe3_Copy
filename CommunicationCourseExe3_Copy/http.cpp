@@ -86,8 +86,9 @@ int parseHttpRequest(char *msg, int len, HttpRequest *reqPtr)
 	int lineID = 0;
 	bool inContentPartOfRequest = false;
 
+	cout << "--------- Request: ---------\n";
 	while (line != NULL && lineID >= 0 && !inContentPartOfRequest) {
-		cout << "parseHttpRequest lineID: "<< lineID << " line: " << line << "\n";
+		cout << line << "\n";
 		if (lineID == 0) //method url version
 		{
 			if (parseMethod(line, reqPtr) == INVALID_HTTP_MSG)
@@ -126,6 +127,11 @@ int parseHttpRequest(char *msg, int len, HttpRequest *reqPtr)
 		line = strtok_s(NULL, "\n", &rest);
 		lineID++;
 	}
+	cout << "--------- End Request ---------\n\n";
+	if (strcmp(reqPtr->httpVersion, "HTTP/1.1") != STRINGS_EQUAL && strcmp(reqPtr->httpVersion, "HTTP/1.0") != STRINGS_EQUAL)
+	{
+		return INVALID_HTTP_MSG;
+	}
 	reqPtr->isEmpty = NOT_EMPTY_REQ;
 	return VALID_HTTP_MSG;
 }
@@ -158,7 +164,6 @@ int httpResponseToString(HttpResponse response, char buffer[])
 	if (response.content != NULL)
 	{
 		length += sprintf(buffer + length, response.content);
-		//free(response.content);  // mem failure on TRACE method
 	}
 	
 
@@ -352,5 +357,14 @@ HttpResponse handleDeleteRequest(HttpRequest req)
 	}
 	strcpy(res.contentTypeHeader, "text/html");
 	res.contentLengthHeader = 0;
+	return res;
+}
+
+HttpResponse handleInvalidRequest(HttpRequest req)
+{
+	HttpResponse res;
+	strcpy(res.connectionHeader, "keep-alive");
+	strcpy(res.statusPhrase, "Bad Request");
+	res.responseCode = 400;
 	return res;
 }
