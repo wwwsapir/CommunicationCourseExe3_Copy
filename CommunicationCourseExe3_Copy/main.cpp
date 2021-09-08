@@ -164,7 +164,9 @@ void main()
 		for (int i = 1; i < MAX_SOCKETS; i++) //i =1 excluding main listener socket 
 		{
 			//socket which dont send, listening and did not receive for more then 2 minutes
-			if (sockets[i].send == IDLE && sockets[i].recv == RECEIVE && (GetTickCount64() - sockets[i].lastReceiveTime) / 1000 > 120)
+			long int tnow = GetTickCount64();
+			//if (((sockets[i].send == EMPTY && sockets[i].recv == EMPTY)|| (sockets[i].send == IDLE && sockets[i].recv == RECEIVE)) && (tnow - sockets[i].lastReceiveTime) / 1000 > 120 )
+			if (sockets[i].send == IDLE && sockets[i].recv != EMPTY && (tnow - sockets[i].lastReceiveTime) / 1000 > 120)
 			{
 				SOCKET idt = sockets[i].id;
 				if (FD_ISSET(sockets[i].id, &waitRecv)) //remove this timeouted socket
@@ -278,7 +280,8 @@ void receiveMessage(int index, SocketState sockets[], int* socketCountPtr)
 	int bytesRecv = recv(msgSocket, reqBuffer, 10000, 0);
 
 	//marking the time for the 2 minutes time out
-	sockets[index].lastReceiveTime = GetTickCount64();
+	if (bytesRecv >0)
+		sockets[index].lastReceiveTime = GetTickCount64();
 
 	if (SOCKET_ERROR == bytesRecv)
 	{
@@ -356,7 +359,7 @@ void sendMessage(int index, SocketState sockets[], int* socketCountPtr)
 		cout << "HTTP Server: Error at send(): " << WSAGetLastError() << endl;
 		return;
 	}
-	cout << "HTTP Server: " << bytesSent << " bytes sent" << "\n";
+	cout << "HTTP Server: " << bytesSent << " bytes sent via " << msgSocket << " socket\n";
 	// If there's a second message waiting for response then move it to be the first "in line". If not, make sending idle.
 	if (sockets[index].req2.isEmpty == EMPTY_REQ)
 	{
