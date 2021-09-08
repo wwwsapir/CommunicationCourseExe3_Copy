@@ -90,7 +90,10 @@ int createFileObject(char* path, char* newFileContent)
 		return FILE_ERROR;
 	}
 	//fprintf(filePointer,"%s", newFileContent);
-	fputs(newFileContent, filePointer);
+	if (newFileContent != NULL)
+		fputs(newFileContent, filePointer);
+	else
+		fputs("", filePointer);
 	fclose(filePointer);
 	return SUCCESS;
 }
