@@ -5,6 +5,23 @@
 #include "fileServer.h"
 using namespace std;
 
+void deleteRequest(HttpRequest* reqPtr, int freeContent)
+{
+	if (freeContent == FREE_CONTENT && reqPtr->content != NULL)
+		free(reqPtr->content);
+
+	reqPtr->isEmpty = EMPTY_REQ;
+	reqPtr->method = -1;
+	reqPtr->url[0] = '\0';
+
+	reqPtr->connectionHeader[0] = '\0';
+	reqPtr->contentTypeHeader[0] = '\0';
+	reqPtr->contentLengthHeader = 0;
+
+	reqPtr->content = NULL;
+	reqPtr->rawRequest = NULL;
+}
+
 int parseMethod(char * line, HttpRequest* reqPtr)
 {
 	char* part = strtok(line, " "); //method
@@ -96,7 +113,7 @@ int parseHttpRequest(char *msg, int len, HttpRequest *reqPtr)
 
 			if (strcmp("\r", key) == STRINGS_EQUAL && reqPtr->contentLengthHeader > 0 && reqPtr->method != TRACE) //empty row before data - end of headers
 			{
-				reqPtr->content = (char *)malloc(reqPtr->contentLengthHeader);
+				reqPtr->content = (char *)malloc(reqPtr->contentLengthHeader + 1);
 				if(reqPtr->content != NULL && rest != NULL)
 					strcpy(reqPtr->content, rest);
 				inContentPartOfRequest = true;
@@ -223,7 +240,7 @@ HttpResponse handleGetRequest(HttpRequest req)
 	operateQuery(req.url); //takes care language parameters and default document name
 
 	HttpResponse res;
-	int stat = getFileObject(req.url, &res.content, &res.contentLengthHeader);
+	int stat = getFileObject(req.url, &res.content, &res.contentLengthHeader, FILL_CONTENT);
 	fillResponseHeaders(&res, stat, req.url);
 	return res;
 }
@@ -235,7 +252,7 @@ HttpResponse handlePostRequest(HttpRequest req)
 		int contentLeft = req.contentLengthHeader;
 		char* line = req.content;
 		char* currStr;
-		cout << "Message from client POST request:\n";
+		cout << "---Message from client POST request:---\n";
 		currStr = strtok(line, "\0");
 		while (contentLeft > 0 && currStr != NULL)
 		{
@@ -243,8 +260,10 @@ HttpResponse handlePostRequest(HttpRequest req)
 			contentLeft -= strlen(currStr);
 			currStr = strtok(NULL, "\0");
 		}
+		cout << "-----------POST message end------------\n";
 	}
-	
+	else
+		cout << "---POST request body is empty. No strings to print.---\n";
 	HttpResponse res;
 	fillResponseHeaders(&res, SUCCESS, req.url);
 	return res;
@@ -309,7 +328,7 @@ HttpResponse handleHeadRequest(HttpRequest req)
 	operateQuery(req.url); //takes care language parameters and default document name
 
 	HttpResponse res;
-	int stat = getFileLen(req.url, &res.contentLengthHeader);
+	int stat = getFileObject(req.url, &res.content, &res.contentLengthHeader, NO_CONTENT);
 	fillResponseHeaders(&res, stat, req.url);
 	return res;
 }

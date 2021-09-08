@@ -8,6 +8,9 @@
 #define MAX_OPTION_SIZE 100
 #define EMPTY_STRING "\0"
 #define NULL 0
+
+#define FREE_CONTENT 1
+#define LEAVE_CONTENT_AS_IS 0
 enum httpMethodsEnum { GET, POST, PUT, DEL, OPTIONS, HEAD, TRACE };
 const char httpMethods[NUMBER_OF_OPTIONS][MAX_OPTION_SIZE] = { "GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "TRACE" };
 
@@ -24,6 +27,7 @@ struct HttpRequest
 	int contentLengthHeader = 0;
 
 	char* content = NULL;
+	char* rawRequest = NULL;
 };
 
 struct HttpResponse
@@ -53,3 +57,4 @@ HttpResponse handleHeadRequest(HttpRequest req);
 HttpResponse handleDeleteRequest(HttpRequest req);
 int getQueryParameter(char* query, char* parametr, char value[]);
 void operateQuery(char* url);
+void deleteRequest(HttpRequest* reqPtr, int freeContent);
