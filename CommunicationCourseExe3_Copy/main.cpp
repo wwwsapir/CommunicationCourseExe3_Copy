@@ -19,6 +19,7 @@ struct SocketState
 	int	send = EMPTY;			// Sending?
 	HttpRequest req1;
 	HttpRequest req2;
+	long int lastReceiveTime;
 };
 
 const int HTTP_SERVER_PORT = 80;
@@ -158,6 +159,25 @@ void main()
 			return;
 		}
 
+		//close connection if idle more then 2 minutes
+		//must come directly after blocking "select" 
+		for (int i = 1; i < MAX_SOCKETS; i++) //i =1 excluding main listener socket 
+		{
+			//socket which dont send, listening and did not receive for more then 2 minutes
+			if (sockets[i].send == IDLE && sockets[i].recv == RECEIVE && (GetTickCount64() - sockets[i].lastReceiveTime) / 1000 > 120)
+			{
+				SOCKET idt = sockets[i].id;
+				if (FD_ISSET(sockets[i].id, &waitRecv)) //remove this timeouted socket
+				{
+					nfd--;
+				}
+				closesocket(sockets[i].id);
+				removeSocket(i, sockets, &socketsCount);
+				cout << "HTTP Server: Client socket " << idt << " closed after 2 minutes timeout" << endl;
+			}
+		}
+
+
 		for (int i = 0; i < MAX_SOCKETS && nfd > 0; i++)
 		{
 			if (FD_ISSET(sockets[i].id, &waitRecv))
@@ -184,6 +204,9 @@ void main()
 				sendMessage(i, sockets, &socketsCount);
 			}
 		}
+
+
+		
 	}
 
 	// Closing connections and Winsock.
@@ -208,6 +231,7 @@ bool addSocket(SOCKET id, int what, SocketState sockets[], int* socketCountPtr)
 			sockets[i].id = id;
 			sockets[i].recv = what;
 			sockets[i].send = IDLE;
+			sockets[i].lastReceiveTime = GetTickCount64();
 			(*socketCountPtr)++;
 			return (true);
 		}
@@ -236,7 +260,7 @@ void acceptConnection(int index, SocketState sockets[], int* socketCountPtr)
 		cout << "HTTP Server: Error at accept(): " << WSAGetLastError() << endl;
 		return;
 	}
-	cout << "HTTP Server: Client " << inet_ntoa(from.sin_addr) << ":" << ntohs(from.sin_port) << " is connected." << endl;
+	cout << "HTTP Server: Client " << inet_ntoa(from.sin_addr) << ":" << ntohs(from.sin_port) << " is connected to socket " << msgSocket << endl;
 
 	if (addSocket(msgSocket, RECEIVE, sockets, socketCountPtr) == false)
 	{
@@ -252,6 +276,9 @@ void receiveMessage(int index, SocketState sockets[], int* socketCountPtr)
 	char reqBuffer[10000];
 
 	int bytesRecv = recv(msgSocket, reqBuffer, 10000, 0);
+
+	//marking the time for the 2 minutes time out
+	sockets[index].lastReceiveTime = GetTickCount64();
 
 	if (SOCKET_ERROR == bytesRecv)
 	{
