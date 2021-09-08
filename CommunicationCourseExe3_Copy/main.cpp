@@ -6,40 +6,36 @@ using namespace std;
 #pragma comment(lib, "Ws2_32.lib")
 #include "http.h"
 
-
-struct SocketState
-{
-	SOCKET id;			// Socket handle
-	int	recv;			// Receiving?
-	int	send;			// Sending?
-	HttpRequest req1;
-	HttpRequest req2;
-};
-
-
-
-const int HTTP_SERVER_PORT = 80;
-const int MAX_SOCKETS = 60;
-
 const int EMPTY = 0;
 const int LISTEN = 1;
 const int RECEIVE = 2;
 const int IDLE = 3;
 const int SEND = 4;
 
-bool addSocket(SOCKET id, int what);
-void removeSocket(int index);
-void acceptConnection(int index);
-void receiveMessage(int index);
-void sendMessage(int index);
+struct SocketState
+{
+	SOCKET id;			// Socket handle
+	int	recv = EMPTY;			// Receiving?
+	int	send = EMPTY;			// Sending?
+	HttpRequest req1;
+	HttpRequest req2;
+};
 
+const int HTTP_SERVER_PORT = 80;
+const int MAX_SOCKETS = 60;
 
-struct SocketState sockets[MAX_SOCKETS] = { 0 };
-int socketsCount = 0;
+bool addSocket(SOCKET id, int what, SocketState sockets[], int* socketCountPtr);
+void removeSocket(int index, SocketState sockets[], int* socketCountPtr);
+void acceptConnection(int index, SocketState sockets[], int* socketCountPtr);
+void receiveMessage(int index, SocketState sockets[], int* socketCountPtr);
+void sendMessage(int index, SocketState sockets[], int* socketCountPtr);
 
 
 void main()
 {
+	struct SocketState sockets[MAX_SOCKETS];
+	int socketsCount = 0;
+
 	// Initialize Winsock (Windows Sockets).
 
 	// Create a WSADATA object called wsaData.
@@ -121,7 +117,7 @@ void main()
 		WSACleanup();
 		return;
 	}
-	addSocket(listenSocket, LISTEN);
+	addSocket(listenSocket, LISTEN, sockets, &socketsCount);
 
 	// Accept connections and handles them one by one.
 	while (true)
@@ -170,11 +166,11 @@ void main()
 				switch (sockets[i].recv)
 				{
 				case LISTEN:
-					acceptConnection(i);
+					acceptConnection(i, sockets, &socketsCount);
 					break;
 
 				case RECEIVE:
-					receiveMessage(i);
+					receiveMessage(i, sockets, &socketsCount);
 					break;
 				}
 			}
@@ -185,13 +181,7 @@ void main()
 			if (FD_ISSET(sockets[i].id, &waitSend))
 			{
 				nfd--;
-				sendMessage(i);
-				/*switch (sockets[i].send)
-				{
-				case SEND:
-
-				break;
-				}*/
+				sendMessage(i, sockets, &socketsCount);
 			}
 		}
 	}
@@ -202,7 +192,7 @@ void main()
 	WSACleanup();
 }
 
-bool addSocket(SOCKET id, int what)
+bool addSocket(SOCKET id, int what, SocketState sockets[], int* socketCountPtr)
 {
 	// Set the socket to be in non-blocking mode.
 	unsigned long flag = 1;
@@ -218,23 +208,23 @@ bool addSocket(SOCKET id, int what)
 			sockets[i].id = id;
 			sockets[i].recv = what;
 			sockets[i].send = IDLE;
-			socketsCount++;
+			(*socketCountPtr)++;
 			return (true);
 		}
 	}
 	return (false);
 }
 
-void removeSocket(int index)
+void removeSocket(int index, SocketState sockets[], int* socketCountPtr)
 {
 	sockets[index].recv = EMPTY;
 	sockets[index].send = EMPTY;
-	socketsCount--;
-	sockets[index].req1.isEmpty = EMPTY_REQ;
-	sockets[index].req2.isEmpty = EMPTY_REQ;
+	(*socketCountPtr)--;
+	deleteRequest(&sockets[index].req1, FREE_CONTENT);
+	deleteRequest(&sockets[index].req2, FREE_CONTENT);
 }
 
-void acceptConnection(int index)
+void acceptConnection(int index, SocketState sockets[], int* socketCountPtr)
 {
 	SOCKET id = sockets[index].id;
 	struct sockaddr_in from;		// Address of sending partner
@@ -248,7 +238,7 @@ void acceptConnection(int index)
 	}
 	cout << "HTTP Server: Client " << inet_ntoa(from.sin_addr) << ":" << ntohs(from.sin_port) << " is connected." << endl;
 
-	if (addSocket(msgSocket, RECEIVE) == false)
+	if (addSocket(msgSocket, RECEIVE, sockets, socketCountPtr) == false)
 	{
 		cout << "\t\tToo many connections, dropped!\n";
 		closesocket(id);
@@ -256,7 +246,7 @@ void acceptConnection(int index)
 	return;
 }
 
-void receiveMessage(int index)
+void receiveMessage(int index, SocketState sockets[], int* socketCountPtr)
 {
 	SOCKET msgSocket = sockets[index].id;
 	char reqBuffer[10000];
@@ -267,7 +257,7 @@ void receiveMessage(int index)
 	{
 		cout << "HTTP Server: Error at recv(): " << WSAGetLastError() << endl;
 		closesocket(msgSocket);
-		removeSocket(index);
+		removeSocket(index, sockets, socketCountPtr);
 		return;
 	}
 
@@ -281,7 +271,7 @@ void receiveMessage(int index)
 		strcmp(req.connectionHeader, "Close") == STRINGS_EQUAL)
 	{
 		closesocket(msgSocket);
-		removeSocket(index);
+		removeSocket(index, sockets, socketCountPtr);
 	}
 	else
 	{
@@ -294,14 +284,11 @@ void receiveMessage(int index)
 			sockets[index].req2 = req;
 		}
 
-		if (sockets[index].req1.isEmpty != EMPTY_REQ)
-		{
-			sockets[index].send = SEND;
-		}
+		sockets[index].send = SEND;
 	}
 }
 
-void sendMessage(int index)
+void sendMessage(int index, SocketState sockets[], int* socketCountPtr)
 {
 	int bytesSent = 0;
 
@@ -331,13 +318,11 @@ void sendMessage(int index)
 		response = handleDeleteRequest(sockets[index].req1);
 		break;
 	}
-	//to do : free malloc of data for request
-	//free(sockets[index].req1.content);
-	//sockets[index].req1.content = NULL;
+	deleteRequest(&sockets[index].req1, FREE_CONTENT);
+
 	char responseStrBuffer[10000] = EMPTY_STRING;
 	int responseLen = httpResponseToString(response, responseStrBuffer);
-	//to do : free malloc of data for responce
-	//free(response.content);
+
 	bytesSent = send(msgSocket, responseStrBuffer, responseLen, 0);
 	if (SOCKET_ERROR == bytesSent)
 	{
@@ -345,7 +330,7 @@ void sendMessage(int index)
 		return;
 	}
 	cout << "HTTP Server: " << bytesSent << " bytes sent" << "\n";
-	// If there's a second message waiting for response then move it to be the first one
+	// If there's a second message waiting for response then move it to be the first "in line". If not, make sending idle.
 	if (sockets[index].req2.isEmpty == EMPTY_REQ)
 	{
 		sockets[index].send = IDLE;
@@ -353,6 +338,6 @@ void sendMessage(int index)
 	else
 	{
 		sockets[index].req1 = sockets[index].req2;
-		sockets[index].req2.isEmpty = EMPTY_REQ;
+		deleteRequest(&sockets[index].req2, LEAVE_CONTENT_AS_IS);
 	}
 }
